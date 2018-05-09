@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 //----------------------------------------------Uden-for-loop--------------------------------------------------------------------------------------------------
-void ExtractFeat::clearFileContent() 
+void ExtractFeat::clearFileContent()
 {
 	ofstream ofs;
 	ofs.open(data_file_path, std::ofstream::out | std::ofstream::trunc); // Open and clear content
@@ -19,7 +19,7 @@ void ExtractFeat::displayImg(const String &name, const Mat &img)
 	imshow(name, img);
 }
 
-void ExtractFeat::makeBinary(const Mat &img, Mat &bin) 
+void ExtractFeat::makeBinary(const Mat &img, Mat &bin)
 {
 	Mat color_arr[3];
 	split(img, color_arr);
@@ -36,12 +36,14 @@ void ExtractFeat::makeBinary(const Mat &img, Mat &bin)
 	medianBlur(bin, bin, 7); // Reduce salt-and-peper noise
 }
 
-//----------------------------------------------Nuværende-fisk--------------------------------------------------------------------------------------------------
+//----------------------------------------------Nuvï¿½rende-fisk--------------------------------------------------------------------------------------------------
 
-void ExtractFeat::getMeanHist(Fillet &fillet) 
+void ExtractFeat::getMeanHist(Fillet &fillet)
 {
-	vector<Mat> bgr_planes; 	/// Separate the image in 3 planes ( B, G and R )
-	split(fillet.img, bgr_planes);
+	vector<Mat> hsv_planes(3); 	/// Separate the image in 3 planes
+	Mat hsv_img;
+	cvtColor(fillet.img, hsv_img, CV_BGR2HSV);
+	split(fillet.img, hsv_planes);
 
 	int histSize = 256; 	/// Establish the number of bins
 	float range[] = { 0, 256 };		/// Set the ranges ( for B,G,R) )
@@ -52,17 +54,17 @@ void ExtractFeat::getMeanHist(Fillet &fillet)
 	Mat b_hist, g_hist, r_hist;
 
 	/// Compute the histograms:
-	calcHist(&bgr_planes[0], 1, nullptr, fillet.bin, b_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&bgr_planes[1], 1, nullptr, fillet.bin, g_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&bgr_planes[2], 1, nullptr, fillet.bin, r_hist, 1, &histSize, &histRange, uniform, accumulate);
+	calcHist(&hsv_planes[0], 1, nullptr, fillet.bin, b_hist, 1, &histSize, &histRange, uniform, accumulate);
+	calcHist(&hsv_planes[1], 1, nullptr, fillet.bin, g_hist, 1, &histSize, &histRange, uniform, accumulate);
+	calcHist(&hsv_planes[2], 1, nullptr, fillet.bin, r_hist, 1, &histSize, &histRange, uniform, accumulate);
 
 	/// Compute the weighted mean
 	float sum[3] = { 0 };
 	int pixels[3] = { 0 };
-	
+
 
 	for (int i = 0; i < b_hist.rows; i++)										// Start at i = 0 to ignore black pixels
-	{				
+	{
 		pixels[0] += b_hist.at<float>(i);
 		pixels[1] += g_hist.at<float>(i);
 		pixels[2] += r_hist.at<float>(i);
@@ -71,14 +73,14 @@ void ExtractFeat::getMeanHist(Fillet &fillet)
 		sum[1] += g_hist.at<float>(i)*i;
 		sum[2] += r_hist.at<float>(i)*i;
 	}
-	
+
 	fillet.hist_mean[0] = sum[0] / pixels[0];
 	fillet.hist_mean[1] = sum[1] / pixels[1];
 	fillet.hist_mean[2] = sum[2] / pixels[2];
 
 }
 
-void ExtractFeat::getDimensions(Fillet &fillet) 
+void ExtractFeat::getDimensions(Fillet &fillet)
 {
 	const RotatedRect minR = minAreaRect(fillet.contour); // Define the minimum rectangle around the contour
 
@@ -89,7 +91,7 @@ void ExtractFeat::getDimensions(Fillet &fillet)
 		fillet.width = minR.size.width;
 		fillet.height = minR.size.height;
 	}
-	else 
+	else
 	{
 		fillet.width = minR.size.height;
 		fillet.height = minR.size.width;
@@ -106,7 +108,7 @@ void ExtractFeat::getDimensions(Fillet &fillet)
 
 }
 
-void ExtractFeat::getBloodStains(Fillet &fillet) 
+void ExtractFeat::getBloodStains(Fillet &fillet)
 {
 	Mat color_arr[3];
 	split(fillet.img, color_arr);										// spilt image into 3 channels
@@ -126,8 +128,8 @@ void ExtractFeat::getBloodStains(Fillet &fillet)
 
 	// Filter by Area (Min and max to only get pixels defining a common blood stain)
 	params.filterByArea = true;
-	params.minArea = 500; //bloodspot minmum størrelse
-	params.maxArea = 10000; //bloodspot maximuum størrelse
+	params.minArea = 500; //bloodspot minmum stï¿½rrelse
+	params.maxArea = 10000; //bloodspot maximuum stï¿½rrelse
 
 	// Filter by Inertia
 	params.filterByInertia = true;
@@ -141,22 +143,22 @@ void ExtractFeat::getBloodStains(Fillet &fillet)
 	vector<vector<Point> > contours;
 
 	findContours(bin, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);	// Find contours
-	 
+
 	// Approximate contours to get bounding rects
 	vector<vector<Point>> contours_poly(contours.size());
 
-	
+
 	for (int i = 0; i < contours.size(); i++) // Draw contours
 	{
 		if (contourArea(contours[i]) < params.minArea || contourArea(contours[i]) > params.maxArea) 		// Skip if area is too small or too large
-		{ 
+		{
 			continue;
 		}
 		approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);											// Approximate contours to get bounding rects
 		Rect boundRect;
 		boundRect = boundingRect(Mat(contours_poly[i]));
 
-		for (auto &keypoint : keypoints) 
+		for (auto &keypoint : keypoints)
 		{
 			if (boundRect.contains(keypoint.pt))																// Only draw contours that contains a keypoint
 			{
@@ -172,7 +174,7 @@ void ExtractFeat::getnotches(Fillet &fillet)
 {
 	int edgeSize = 50;
 	vector<vector<Point>> indent_contour;
-	
+
 	Mat bin_region = Mat(fillet.bin.rows+ edgeSize*2, fillet.bin.cols+edgeSize*2 , CV_8U, Scalar(0,0,0));
 	Mat bin_indent = Mat(fillet.bin.rows+ edgeSize*2, fillet.bin.cols+ edgeSize*2, CV_8U);
 	Rect region = Rect(edgeSize, edgeSize, fillet.boundRect.width, fillet.boundRect.height);
@@ -181,7 +183,7 @@ void ExtractFeat::getnotches(Fillet &fillet)
 	fillet.bin.copyTo(bin_region(region));
 
 
-	Mat element = getStructuringElement(MORPH_RECT, Size(30, 30)); 
+	Mat element = getStructuringElement(MORPH_RECT, Size(30, 30));
 
 	morphologyEx(bin_region, bin_indent, MORPH_CLOSE, element); //closing
 
@@ -202,20 +204,20 @@ void ExtractFeat::getnotches(Fillet &fillet)
 		{
 			fillet.notches.push_back(indent_contours[i]);
 		}
-		
+
 	}
 
 }
 
 void ExtractFeat::getShape(Fillet &fillet)
 {
-	
-	
+
+
 
 	/// Find the convex hull object for each contour
 
-		convexHull((fillet.contour), fillet.hull);
-		fillet.hullarity = ((contourArea(fillet.contour))/ contourArea(fillet.hull));
+	convexHull((fillet.contour), fillet.hull);
+	fillet.hullarity = ((contourArea(fillet.contour))/ contourArea(fillet.hull));
 
 }
 
@@ -225,10 +227,10 @@ void ExtractFeat::getSkin(Fillet &fillet)
 
 	//Mat blood_region = Mat(fillet.boundRect.height + edgeSize * 2, fillet.boundRect.width + edgeSize * 2, CV_8U, Scalar(0, 0, 0));
 	Mat skin_region = Mat(fillet.boundRect.height + edgeSize * 2, fillet.boundRect.width + edgeSize * 2, CV_8U, Scalar(0, 0, 0));
-	
+
 	Rect region = Rect(edgeSize, edgeSize, fillet.boundRect.width, fillet.boundRect.height);
 
-	
+
 
 	Mat skinimg = Mat(fillet.boundRect.height + edgeSize * 2, fillet.boundRect.width + edgeSize * 2, CV_8UC3, Scalar(0, 0, 0));
 	cvtColor(fillet.img, skinimg, COLOR_BGR2HSV);
@@ -245,21 +247,21 @@ void ExtractFeat::getSkin(Fillet &fillet)
 	// Binary Threshold
 	medianBlur(skin_region, skin_region, 21);
 	threshold(skin_region, skin_region, thresh, maxValue, 4);
-	
-	/*double thresh_blood = 100;
-	double maxValue_blood = 255;
 
-	hsv_planes[2].copyTo(blood_region(region));
-	threshold(blood_region, blood_region, thresh_blood, maxValue_blood, 1);
-	imshow("Vcha" + fillet.name, blood_region);*/
+	/*double thresh_blood = 100;
+    double maxValue_blood = 255;
+
+    hsv_planes[2].copyTo(blood_region(region));
+    threshold(blood_region, blood_region, thresh_blood, maxValue_blood, 1);
+    imshow("Vcha" + fillet.name, blood_region);*/
 
 	int erosion_size = 11;
 
 
 
 	Mat element = getStructuringElement(MORPH_RECT,
-		Size(2 * erosion_size + 1, 2 * erosion_size + 1),
-		Point(erosion_size, erosion_size));
+										Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+										Point(erosion_size, erosion_size));
 
 	erode(skin_region, skin_region, element);
 	dilate(skin_region, skin_region, element);
@@ -295,13 +297,13 @@ void ExtractFeat::saveFeatures(const Fillet &fillet)
 	datafile.close();
 }
 
-void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet) 
+void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 {
 	// Define the minimum Rect (again)
 	const RotatedRect minR = minAreaRect(fillet.contour);
 
 
-	// PÅ STORE IMG
+	// Pï¿½ STORE IMG
 
 	// Draw contour outline
 	//polylines(img(fillet.boundRect), fillet.contour, true, Scalar(255, 255, 255), 1);
@@ -315,7 +317,7 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 		Point p2 = Point(rect_points[(j + 1) % 4].x + fillet.boundRect.x, rect_points[(j + 1) % 4].y + fillet.boundRect.y);
 		//line(img, p1, p2, Scalar(0, 255, 0), 3, 8);
 	}
-	
+
 	//draw bounding rect
 	//rectangle(img, fillet.boundRect, Scalar(0, 0, 255),3);
 
@@ -335,7 +337,7 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 
 	// Draw poly around the bloodstain
 	//drawContours(img(fillet.boundRect), fillet.bloodstain_contours, -1, Scalar(0, 0, 255), 2);
-	
+
 
 	// Draw fill the notches
 	//drawContours(img(fillet.boundRect), fillet.notches, -1, Scalar(0, 0, 255),-1);
@@ -343,26 +345,26 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 	//draw skin
 	for (int skin_i = 0; skin_i < fillet.skin_contour.size(); skin_i++)
 	{
-			drawContours(img(fillet.boundRect), fillet.skin_contour, skin_i, Scalar(0, 255, 255), -1);
+		drawContours(img(fillet.boundRect), fillet.skin_contour, skin_i, Scalar(0, 255, 255), -1);
 	}
 
 
 	// Draw a circle around the notches
 	/*for (auto &indent : fillet.notches) {
-	// Add the coordinates of the boundingRect starting point
-	Point indent_center = (indent + fillet.boundRect.tl());
-	circle(img, indent_center, 10, Scalar(0, 0, 255), 3);
-	}*/
+    // Add the coordinates of the boundingRect starting point
+    Point indent_center = (indent + fillet.boundRect.tl());
+    circle(img, indent_center, 10, Scalar(0, 0, 255), 3);
+    }*/
 
-	
-	// PÅ LILLE IMG
-	
+
+	// Pï¿½ LILLE IMG
+
 	// Calculate the center point compared to the original img
 	Point centerSmall = Point(int(minR.center.x), int(minR.center.y));
 
 	//draw center of Mass
 	//drawMarker(fillet.img, fillet.contour_center_mass, Scalar(0, 255, 0), MARKER_CROSS, 10, 1);
-	
+
 
 	// Draw the minRect center
 	//drawMarker(fillet.img, centerSmall, Scalar(0, 0, 255), MARKER_CROSS, 10, 1);
@@ -375,18 +377,18 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 
 	Mat binHull = Mat(fillet.bin.rows, fillet.bin.cols, CV_8UC3, Scalar(0, 0, 0));
 
-	
-	
+
+
 
 	/*//Draw Convex
-	polylines(binHull, fillet.hull, true, Scalar(65,163,244), 3);
-	
-	vector<vector<Point>> binHullCon;
+    polylines(binHull, fillet.hull, true, Scalar(65,163,244), 3);
 
-	binHullCon.push_back(fillet.contour);
+    vector<vector<Point>> binHullCon;
 
-	drawContours(binHull, binHullCon, -1, Scalar(255, 255, 255), -1);
-	displayImg(fillet.name, binHull);*/
+    binHullCon.push_back(fillet.contour);
+
+    drawContours(binHull, binHullCon, -1, Scalar(255, 255, 255), -1);
+    displayImg(fillet.name, binHull);*/
 
 }
 
@@ -398,7 +400,7 @@ void ExtractFeat::run(vector<Mat> &images)
 
 	for (int index = 0; index < images.size(); index++)			// Loop through all the images
 	{
-		
+
 		Mat bin = Mat(images[index].rows, images[index].cols, CV_8U, 255);
 
 		makeBinary(images[index], bin);		// Make the image binary (black with white spots)
@@ -412,11 +414,11 @@ void ExtractFeat::run(vector<Mat> &images)
 			// Skip if the area is too small
 			if (contourArea(contours[i]) < 30000)
 			{
-			continue;
+				continue;
 			}
 			///////////////// START PROCESSING /////////////////
 			Fillet new_fillet;
-			
+
 			//drawContours(mask, contours, i, Scalar(255, 255, 255), -1);
 
 			// Save the contour points in relation to the bounding box
@@ -434,22 +436,22 @@ void ExtractFeat::run(vector<Mat> &images)
 
 			current_contour.push_back(new_fillet.contour);
 
-			//hvornår bliveer det her gjordt?
-			drawContours(new_fillet.bin, current_contour, 0, Scalar(255, 255, 255), -1); // tegner contour af den fisk der er igang i loopet. 
-			
-			
+			//hvornï¿½r bliveer det her gjordt?
+			drawContours(new_fillet.bin, current_contour, 0, Scalar(255, 255, 255), -1); // tegner contour af den fisk der er igang i loopet.
+
+
 			// Copy only where the boundingRect is
 			images[index](new_fillet.boundRect).copyTo(new_fillet.img, bin(new_fillet.boundRect));
 
 			// Generate name of the individual countours
 			// fish [index of image]-[index of contour] TODO: Use timestamp?
 			new_fillet.name = "fish " + to_string(index) + "-" + to_string(i);
-			
+
 			// Calculates the mean histogram value of each BGR channel
 			getMeanHist(new_fillet);
 
 			getDimensions(new_fillet);														// Saves desired dimentions of contour to Fillet object
-																				
+
 			getBloodStains(new_fillet);														// Detects bloodstains and draws them on input image
 
 			getnotches(new_fillet);															//Detects notches and gives coordinates of them.
@@ -462,17 +464,16 @@ void ExtractFeat::run(vector<Mat> &images)
 
 
 			drawFeatures(images[index], new_fillet);
-			
+
 		}
-		
+
 		String name_orig = "Original img " + to_string(index);
 		displayImg(name_orig, images[index]);
 
 	}
 
 	waitKey(0);
-	
-}
 
+}
 
 

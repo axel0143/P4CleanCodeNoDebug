@@ -32,13 +32,13 @@ struct Fillet {
 class ExtractFeat
 {
 public:
-	String data_file_path = "C:\\Users\\Axel\\source\\repos\\GitHub_07_05\\GitHub_07_05\\Data\\features.dat";
+	String data_file_path = R"(C:\Users\Axel\source\repos\GitHub_07_05\GitHub_07_05\Data\features.dat)";
 
 	//------------Uden-For-Loop----------------------
 	void clearFileContent();
 	void displayImg(const String &name, const Mat &img);
 	void makeBinary(const Mat &img, Mat &bin);
-	//------------Nuværende-fisk----------------------
+	//------------Nuvï¿½rende-fisk----------------------
 	void getMeanHist(Fillet &fillet);
 	void getDimensions(Fillet &fillet);
 	void getBloodStains(Fillet &fillet);
