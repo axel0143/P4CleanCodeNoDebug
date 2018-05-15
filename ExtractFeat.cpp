@@ -36,43 +36,17 @@ void ExtractFeat::makeBinary(const Mat &img, Mat &bin)
 	medianBlur(bin, bin, 7); // Reduce salt-and-peper noise
 }
 
-//----------------------------------------------Nuværende-fisk--------------------------------------------------------------------------------------------------
+//----------------------------------------------NuvÃ¦rende-fisk--------------------------------------------------------------------------------------------------
 
 void ExtractFeat::getMeanHist(Fillet &fillet) 
 {
-	vector<Mat> hsv_planes(3); 	/// Separate the image in 3 planes
 	Mat hsv_img;
 	cvtColor(fillet.img, hsv_img, CV_BGR2HSV);
-	split(fillet.img, hsv_planes);
+	
+	Scalar means = mean(fillet.img, fillet.bin);
 
-	int histSize = 256; 	/// Establish the number of bins
-	float range[] = { 0, 256 };		/// Set the ranges ( for B,G,R) )
-	const float* histRange = { range };
-
-	bool uniform = true, accumulate = false;
-
-	Mat s_hist, v_hist;
-
-	/// Compute the histograms:
-	calcHist(&hsv_planes[1], 1, nullptr, fillet.bin, s_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&hsv_planes[2], 1, nullptr, fillet.bin, v_hist, 1, &histSize, &histRange, uniform, accumulate);
-
-	/// Compute the weighted mean
-	float sum[2] = { 0 };
-	int pixels[2] = { 0 };
-
-
-	for (int i = 0; i < s_hist.rows; i++)										// Start at i = 0 to ignore black pixels
-	{
-		pixels[0] += s_hist.at<float>(i);
-		pixels[1] += v_hist.at<float>(i);
-
-		sum[0] += s_hist.at<float>(i)*i;
-		sum[1] += v_hist.at<float>(i)*i;
-	}
-
-	fillet.hist_mean[0] = sum[0] / pixels[0];
-	fillet.hist_mean[1] = sum[1] / pixels[1];
+	fillet.hist_mean[0] = means.val[1];
+	fillet.hist_mean[1] = means.val[2];
 }
 
 void ExtractFeat::getDimensions(Fillet &fillet) 
@@ -121,8 +95,8 @@ void ExtractFeat::getBloodStains(Fillet &fillet)
 
 	// Filter by Area (Min and max to only get pixels defining a common blood stain)
 	params.filterByArea = true;
-	params.minArea = 500; //bloodspot minmum størrelse
-	params.maxArea = 10000; //bloodspot maximuum størrelse
+	params.minArea = 500; //bloodspot minmum stÃ¸rrelse
+	params.maxArea = 10000; //bloodspot maximuum stÃ¸rrelse
 
 	// Filter by Inertia
 	params.filterByInertia = true;
@@ -290,7 +264,7 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 	const RotatedRect minR = minAreaRect(fillet.contour);
 
 
-	// PÅ STORE IMG
+	// PÃ… STORE IMG
 
 	// Draw contour outline
 	//polylines(img(fillet.boundRect), fillet.contour, true, Scalar(255, 255, 255), 1);
@@ -344,7 +318,7 @@ void ExtractFeat::drawFeatures(Mat &img, Fillet &fillet)
 	}*/
 
 	
-	// PÅ LILLE IMG
+	// PÃ… LILLE IMG
 	
 	// Calculate the center point compared to the original img
 	Point centerSmall = Point(int(minR.center.x), int(minR.center.y));
@@ -428,7 +402,7 @@ void ExtractFeat::run(vector<Mat> &images)
 
 			current_contour.push_back(new_fillet.contour);
 
-			//hvornår bliveer det her gjordt?
+			//hvornÃ¥r bliveer det her gjordt?
 			drawContours(new_fillet.bin, current_contour, 0, Scalar(255, 255, 255), -1); // tegner contour af den fisk der er igang i loopet. 
 			
 			
