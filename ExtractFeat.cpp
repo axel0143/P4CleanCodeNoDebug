@@ -70,9 +70,7 @@ void ExtractFeat::getDimensions(Fillet &fillet)
 
 	mu = moments(fillet.contour, false);
 
-
 	///  Get the mass centers with use of moment
-
 	fillet.contour_center_mass = Point2f(mu.m10 / mu.m00, mu.m01 / mu.m00);
 
 }
@@ -133,7 +131,6 @@ void ExtractFeat::getBloodStains(Fillet &fillet)
 				break;																							// Break out of current for-loop to go to next contour
 			}
 		}
-
 	}
 }
 
@@ -171,21 +168,15 @@ void ExtractFeat::getnotches(Fillet &fillet)
 		{
 			fillet.notches.push_back(notch_contours[i]);
 		}
-		
 	}
-
 }
 
 void ExtractFeat::getShape(Fillet &fillet)
 {
-	
-	
-
 	/// Find the convex hull object for each contour
-
-		convexHull((fillet.contour), fillet.hull);
-		fillet.hullarity = ((contourArea(fillet.contour))/ contourArea(fillet.hull));
-
+	
+	convexHull((fillet.contour), fillet.hull);
+	fillet.hullarity = ((contourArea(fillet.contour))/ contourArea(fillet.hull));
 }
 
 void ExtractFeat::getSkin(Fillet &fillet)
@@ -197,7 +188,6 @@ void ExtractFeat::getSkin(Fillet &fillet)
 	
 	Rect region = Rect(edgeSize, edgeSize, fillet.boundRect.width, fillet.boundRect.height);
 
-	
 
 	Mat skinimg = Mat(fillet.boundRect.height + edgeSize * 2, fillet.boundRect.width + edgeSize * 2, CV_8UC3, Scalar(0, 0, 0));
 	cvtColor(fillet.img, skinimg, COLOR_BGR2HSV);
@@ -218,7 +208,6 @@ void ExtractFeat::getSkin(Fillet &fillet)
 	int erosion_size = 11;
 
 
-
 	Mat element = getStructuringElement(MORPH_RECT,
 		Size(2 * erosion_size + 1, 2 * erosion_size + 1),
 		Point(erosion_size, erosion_size));
@@ -231,7 +220,8 @@ void ExtractFeat::getSkin(Fillet &fillet)
 	findContours(skin_region(region),skin_contourtemp, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 	for (int i=0; i< skin_contourtemp.size();i++)
 	{
-		if (contourArea(skin_contourtemp[i]) > 5000) {
+		if (contourArea(skin_contourtemp[i]) > 5000) 
+		{
 			fillet.skin_contour.push_back(skin_contourtemp[i]);
 			fillet.skinArea = contourArea(skin_contourtemp[i]);
 		}
