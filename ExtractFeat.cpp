@@ -8,7 +8,7 @@ void ExtractFeat::clearFileContent()
 {
 	ofstream ofs;
 	ofs.open(data_file_path, std::ofstream::out | std::ofstream::trunc); // Open and clear content
-	//ofs << "Name,Width,Height,Area,Hist_mean blue,Hist_mean green,Hist_mean red,Bloodstains,notches,Hullarity,Skin Areas\n";
+	ofs << "Name,Width,Height,Area,S_Mean,V_Mean,Bloodstains,Notches,Hullarity,Skin_Area\n";
 	ofs.close();
 }
 
