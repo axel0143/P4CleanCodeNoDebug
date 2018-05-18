@@ -155,9 +155,10 @@ void ExtractFeat::getnotches(Fillet &fillet)
 	for (int i = 0; i < notch_contours.size(); i++)
 	{
 		if (contourArea(notch_contours[i]) > 150)
-		{
 			fillet.notches.push_back(notch_contours[i]);
-		}
+		
+		if (contourArea(notch_contours[i]) > fillet.largestNotch)
+			fillet.largestNotch = contourArea(notch_contours[i]);
 	}
 }
 
@@ -213,7 +214,7 @@ void ExtractFeat::getSkin(Fillet &fillet)
 		if (contourArea(skin_contourtemp[i]) > 5000) 
 		{
 			fillet.skin_contour.push_back(skin_contourtemp[i]);
-			fillet.skinArea = contourArea(skin_contourtemp[i]);
+			fillet.skinArea += contourArea(skin_contourtemp[i]);
 		}
 	}
 }
