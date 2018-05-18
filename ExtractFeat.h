@@ -18,6 +18,7 @@ struct Fillet {
 	float width = 0, height = 0;					// of RotatedRect
 	float skinArea = 0;
 	float largestNotch = 0;
+	bool bloodstain = false;
 
 	
 	Rect boundRect;									// The img is generated from the original image using this boundingRect
