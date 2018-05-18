@@ -121,7 +121,8 @@ void ExtractFeat::getBloodStains(Fillet &fillet)
 
 		//The remaining contour contains a bloodstain.
 		fillet.bloodstain_contours.push_back(contours_bin[i]);
-	}
+		fillet.bloodstains = true;
+	}	
 }
 
 void ExtractFeat::getnotches(Fillet &fillet)
@@ -232,7 +233,7 @@ void ExtractFeat::saveFeatures(const Fillet &fillet)
 	datafile << fillet.name << ',';
 	datafile << fillet.width << ',' << fillet.height << ',' << fillet.area << ',';
 	datafile << fillet.hist_mean[0] << ',' << fillet.hist_mean[1] << ',';
-	datafile << fillet.bloodstain_contours.size() << ',';
+	datafile << fillet.bloodstain << ',';
 	datafile << fillet.largestNotch << ',';
 	datafile << fillet.hullarity << ',';
 	datafile << fillet.skinArea << '\n';
