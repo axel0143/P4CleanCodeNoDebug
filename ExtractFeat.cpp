@@ -233,7 +233,7 @@ void ExtractFeat::saveFeatures(const Fillet &fillet)
 	datafile << fillet.width << ',' << fillet.height << ',' << fillet.area << ',';
 	datafile << fillet.hist_mean[0] << ',' << fillet.hist_mean[1] << ',';
 	datafile << fillet.bloodstain_contours.size() << ',';
-	datafile << fillet.notches.size() << ',';
+	datafile << fillet.largestNotch << ',';
 	datafile << fillet.hullarity << ',';
 	datafile << fillet.skinArea << '\n';
 	datafile.close();
