@@ -17,6 +17,7 @@ struct Fillet {
 	double area = 0, rectangularity=0, hullarity;						// Contour area + convexity(squarity) which is contour area divided by boundrect area.
 	float width = 0, height = 0;					// of RotatedRect
 	float skinArea = 0;
+	float largestNotch = 0;
 
 	
 	Rect boundRect;									// The img is generated from the original image using this boundingRect
