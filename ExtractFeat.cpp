@@ -77,60 +77,50 @@ void ExtractFeat::getDimensions(Fillet &fillet)
 
 void ExtractFeat::getBloodStains(Fillet &fillet) 
 {
-	Mat color_arr[3];
-	split(fillet.img, color_arr);										// spilt image into 3 channels
+	Mat hsv_img;
+	Mat hsv_arr[3];
 
-	Mat bin;
-	threshold(color_arr[2], bin, 100, 255, 0);									// Threshold to find dark spots
-	medianBlur(bin, bin, 21); 											// Blurring to get a more smooth BLOB
+	cvtColor(fillet.img, hsv_img, COLOR_BGR2HSV);
 
-	// Blob detection
-	SimpleBlobDetector::Params params;
+	split(hsv_img, hsv_arr);
 
-	// Filter by color, 255 for white pixels
-	params.filterByColor = true;
-	params.blobColor = 0;
+	Mat s_channel = hsv_arr[1];
+	Mat v_channel = hsv_arr[2];
 
-	// Filter by Area (Min and max to only get pixels defining a common blood stain)
-	params.filterByArea = true;
-	params.minArea = 500; //bloodspot minmum størrelse
-	params.maxArea = 10000; //bloodspot maximuum størrelse
+	threshold(s_channel, s_channel, 165, 255, 0);
 
-	// Filter by Inertia
-	params.filterByInertia = true;
-	params.minInertiaRatio = 0.2; //hvor meget bloodspottet afviger sig fra en cirkel
+	threshold(v_channel, v_channel, 150, 255, 0);
 
-	Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
-	vector<KeyPoint> keypoints;
-	detector->detect(bin, keypoints);
+	Mat mix = s_channel + v_channel;
+	medianBlur(mix, mix, 29);
 
-	// Contour detection (PART 2)
-	vector<vector<Point> > contours;
+	vector<vector<Point> > contours_bin;
+	findContours(mix, contours_bin, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);	// Find contours
 
-	findContours(bin, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);	// Find contours
-	 
-	// Approximate contours to get bounding rects
-	vector<vector<Point>> contours_poly(contours.size());
-
-	
-	for (int i = 0; i < contours.size(); i++) // Draw contours
+	for (int i = 0; i < contours_bin.size(); i++)
 	{
-		if (contourArea(contours[i]) < params.minArea || contourArea(contours[i]) > params.maxArea) 		// Skip if area is too small or too large
-		{ 
-			continue;
-		}
-		approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);											// Approximate contours to get bounding rects
-		Rect boundRect;
-		boundRect = boundingRect(Mat(contours_poly[i]));
+		double contArea = contourArea(contours_bin[i]);
 
-		for (int j = 0; j < keypoints.size(); j++)
-		{
-			if (boundRect.contains(keypoints[j].pt))																// Only draw contours that contains a keypoint
-			{
-				fillet.bloodstain_contours.push_back(contours_poly[i]);											// Save the bloodstain contour
-				break;																							// Break out of current for-loop to go to next contour
-			}
-		}
+		if (contArea < 2000 || contArea > 10000)
+			continue;
+
+
+		vector<Point> hull;
+		convexHull(contours_bin[i], hull);
+
+		if (contArea / contourArea(hull) < 0.91)
+			continue;
+
+
+		Mat mask = Mat(hsv_img.rows, hsv_img.cols, CV_8U, Scalar(0));
+		drawContours(mask, contours_bin, i, 255, -1);
+		Scalar means = mean(hsv_img, mask);
+
+		if (means.val[2] > 130)
+			continue;
+
+		//The remaining contour contains a bloodstain.
+		fillet.bloodstain_contours.push_back(contours_bin[i]);
 	}
 }
 
